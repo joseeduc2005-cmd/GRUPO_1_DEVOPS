@@ -1,0 +1,192 @@
+openapi: 3.0.3
+info:
+  title: User Registration API
+  version: "1.0.0"
+  description: |
+    Single-endpoint API for registering users into an in-memory store.
+    All error responses follow RFC 9457 (Problem Details for HTTP APIs)
+    with human-readable strings in Spanish.
+
+    Base path is mandated by the project constitution (Principle III,
+    API Versioning): every public endpoint lives under /api/v{N}/...
+
+servers:
+  - url: http://localhost:8080
+    description: Local developer instance
+
+paths:
+  /api/v1/users:
+    post:
+      operationId: registerUser
+      summary: Register a new user
+      description: |
+        Validates that the five required string fields are present and
+        non-blank, that `correo` looks like an email, and that the
+        case-insensitive trimmed `correo` is not already registered.
+        On success returns the stored user with its system-generated
+        UUID. On any failure returns a Problem Details body with HTTP
+        status 400.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UserRequest"
+            examples:
+              valid:
+                summary: A complete, valid request
+                value:
+                  nombre: "Ana"
+                  apellido: "Pérez"
+                  direccion: "Calle 1 #2-3"
+                  telefono: "3001234567"
+                  correo: "ana.perez@example.com"
+      responses:
+        "201":
+          description: User registered successfully
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UserResponse"
+              examples:
+                created:
+                  value:
+                    id: "f47ac10b-58cc-4372-a567-0e02b2c3d479"
+                    nombre: "Ana"
+                    apellido: "Pérez"
+                    direccion: "Calle 1 #2-3"
+                    telefono: "3001234567"
+                    correo: "ana.perez@example.com"
+        "400":
+          description: |
+            Validation failure, duplicate user, or malformed JSON.
+            All variants use the same Problem Details envelope; only
+            `title`, `detail`, and the contents of `errors` differ.
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+              examples:
+                missingFields:
+                  summary: Two required fields missing
+                  value:
+                    type: "about:blank"
+                    title: "Validación fallida"
+                    status: 400
+                    detail: "Uno o más campos requeridos no fueron enviados o están vacíos."
+                    instance: "/api/v1/users"
+                    errors:
+                      - field: "nombre"
+                        message: "el campo nombre es obligatorio"
+                      - field: "apellido"
+                        message: "el campo apellido es obligatorio"
+                duplicateUser:
+                  summary: Email already registered
+                  value:
+                    type: "about:blank"
+                    title: "Usuario ya existente"
+                    status: 400
+                    detail: "El usuario con el correo proporcionado ya se encuentra registrado."
+                    instance: "/api/v1/users"
+                    errors:
+                      - field: "correo"
+                        message: "el correo ya está registrado"
+                malformedJson:
+                  summary: Body is not valid JSON
+                  value:
+                    type: "about:blank"
+                    title: "Solicitud inválida"
+                    status: 400
+                    detail: "El cuerpo de la petición no es un JSON válido."
+                    instance: "/api/v1/users"
+                    errors: []
+
+components:
+  schemas:
+
+    UserRequest:
+      type: object
+      required: [nombre, apellido, direccion, telefono, correo]
+      additionalProperties: false
+      properties:
+        nombre:
+          type: string
+          minLength: 1
+          example: "Ana"
+        apellido:
+          type: string
+          minLength: 1
+          example: "Pérez"
+        direccion:
+          type: string
+          minLength: 1
+          example: "Calle 1 #2-3"
+        telefono:
+          type: string
+          minLength: 1
+          example: "3001234567"
+        correo:
+          type: string
+          format: email
+          minLength: 1
+          example: "ana.perez@example.com"
+
+    UserResponse:
+      type: object
+      required: [id, nombre, apellido, direccion, telefono, correo]
+      properties:
+        id:
+          type: string
+          format: uuid
+          description: System-generated UUID. Clients MUST NOT supply this field on the request; if they do it is ignored.
+        nombre:
+          type: string
+        apellido:
+          type: string
+        direccion:
+          type: string
+        telefono:
+          type: string
+        correo:
+          type: string
+          format: email
+
+    ProblemDetail:
+      type: object
+      description: |
+        RFC 9457 Problem Details envelope with a custom `errors` extension
+        for field-level details. `Content-Type` is
+        `application/problem+json`.
+      required: [title, status]
+      properties:
+        type:
+          type: string
+          format: uri
+          default: "about:blank"
+        title:
+          type: string
+          description: Short, human-readable summary in Spanish.
+          example: "Validación fallida"
+        status:
+          type: integer
+          example: 400
+        detail:
+          type: string
+          description: Longer human-readable explanation in Spanish.
+        instance:
+          type: string
+          description: Request path that produced the error.
+          example: "/api/v1/users"
+        errors:
+          type: array
+          description: Per-field error details. Empty for non-field errors (e.g., malformed JSON).
+          items:
+            type: object
+            required: [field, message]
+            properties:
+              field:
+                type: string
+                example: "correo"
+              message:
+                type: string
+                example: "el correo ya está registrado"

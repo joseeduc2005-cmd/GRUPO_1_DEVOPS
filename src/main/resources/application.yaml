@@ -1,3 +1,10 @@
 spring:
   application:
     name: user-service
+  jackson:
+    deserialization:
+      fail-on-unknown-properties: false
+
+logging:
+  pattern:
+    level: "%5p [%X{correlationId}]"

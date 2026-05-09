@@ -1,6 +1,10 @@
 HELP.md
 .gradle
 build/
+target/
+*.class
+*.log
+.DS_Store
 !gradle/wrapper/gradle-wrapper.jar
 !**/src/main/**/build/
 !**/src/test/**/build/
