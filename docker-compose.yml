@@ -4,10 +4,10 @@ networks:
   user-service-net:
     driver: bridge
 
-
 services:
   postgres:
-    image: mi-postgres:latest
+    image: postgres:17-alpine
+    container_name: user-service-db
     networks:
       - user-service-net
     environment:
@@ -15,7 +15,7 @@ services:
       POSTGRES_USER: userservice
       POSTGRES_PASSWORD: userservice
     ports:
-      - "5432:5432"
+      - "5433:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
     healthcheck:
@@ -23,11 +23,17 @@ services:
       interval: 5s
       timeout: 5s
       retries: 5
-  
+
   user-service:
+    build: .
     image: user-service:latest
+    container_name: user-service-app
     networks:
       - user-service-net
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/userservice
+      SPRING_DATASOURCE_USERNAME: userservice
+      SPRING_DATASOURCE_PASSWORD: userservice
     ports:
       - "8080:8080"
     depends_on:

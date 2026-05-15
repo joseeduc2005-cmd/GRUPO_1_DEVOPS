@@ -1,6 +1,14 @@
 spring:
   application:
     name: user-service
+  datasource:
+    url: ${SPRING_DATASOURCE_URL:jdbc:postgresql://localhost:5432/userservice}
+    username: ${SPRING_DATASOURCE_USERNAME:userservice}
+    password: ${SPRING_DATASOURCE_PASSWORD:userservice}
+  jpa:
+    hibernate:
+      ddl-auto: update
+    open-in-view: false
   jackson:
     deserialization:
       fail-on-unknown-properties: false
